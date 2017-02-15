@@ -1,0 +1,158 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  animation: App-logo-spin infinite 20s linear;
+  height: 80px;
+}
+
+.App-header {
+  background-color: #222;
+  height: 170px;
+  padding: 20px;
+  color: white;
+}
+
+.App-intro {
+  font-size: large;
+}
+.App-body {
+  box-sizing: border-box;
+  padding: 20px;
+  height: 100%;
+  width: 100%;
+}
+
+@keyframes App-logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"] {
+  display: block;
+  margin: 0;
+  width: 100%;
+  font-family: sans-serif;
+  font-size: 16px;
+  appearance: none;
+  box-shadow: none;
+  border-radius: none;
+}
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus {
+  outline: none;
+}
+
+button {
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 18px;
+  font-weight: 400;
+  display: inline-block;
+  color: #fafafa;
+  text-decoration: none;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  box-shadow: 0 1px 1px rgba(0,0,0,0.2);
+  text-decoration: none;
+  background: #cc7a6f;
+  color: #fafafa;
+  margin-top: 1rem;
+}
+
+label {
+  display: block;
+  margin-bottom: .25rem;
+}
+
+ul {
+  padding-left: 20px;
+}
+
+ul li {
+  margin-top: 1rem;
+}
+
+ul li:first-child {
+  margin-top: 0;
+}
+
+hr {
+  margin: 30px 0 20px;
+}
+
+.widget-form,
+.widget-list {
+  border: 1px solid #dedede;
+  text-align: left;
+  display: inline-block;
+  vertical-align: top;
+  width: 400px;
+  padding: 20px;
+}
+
+.widget-list {
+  margin-left: 20px;
+}
+
+.widget-form input[type="text"],
+.widget-form input[type="email"],
+.widget-form input[type="password"],
+.widget-form input[type="number"] {
+  padding: 10px;
+  border: solid 1px #dcdcdc;
+  transition: box-shadow 0.3s, border 0.3s;
+  margin-bottom: 1rem;
+}
+
+.widget-form input[type="text"]:focus,
+.widget-form input[type="email"]:focus,
+.widget-form input[type="password"]:focus,
+.widget-form input[type="number"]:focus{
+  border: solid 1px #0FBBEC;
+  box-shadow: 0 0 10px 0px #61dafb;
+}
+
+.auth-message {
+  margin-top: 1rem;
+}
+table {
+  text-align: left;
+	font-size:14px;
+  width: 100%;
+}
+table th {
+	padding:21px 25px 22px 25px;
+	border-bottom:1px solid #e0e0e0;
+}
+table th:first-child {
+	text-align: left;
+	padding-left:10px;
+}
+
+table tr {
+	text-align: center;
+	padding-left:10px;
+}
+table td:first-child {
+	text-align: left;
+	padding-left:10px;
+	border-left: 0;
+}
+table td {
+	padding:10px;
+}
+
+table tr:hover td {
+	background: #f2f2f2;
+}
