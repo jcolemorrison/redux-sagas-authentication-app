@@ -31,7 +31,8 @@
     "extends": "airbnb",
     "globals": {
       "localStorage": true,
-      "document": true
+      "document": true,
+      "fetch": true
     },
     "rules": {
       "semi": [
@@ -47,7 +48,9 @@
         "prefer-double"
       ],
       "no-unused-vars": ["error", { "varsIgnorePattern": "React" }],
+      "no-shadow": 0,
       "react/jsx-uses-vars": [2],
+      "react/require-default-props": [0],
       "react/jsx-filename-extension": [
         1,
         {

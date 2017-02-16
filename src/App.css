@@ -123,8 +123,12 @@ hr {
   box-shadow: 0 0 10px 0px #61dafb;
 }
 
-.auth-message {
+.auth-messages {
   margin-top: 1rem;
+}
+.auth-messages ul {
+  list-style-type: none;
+  padding-left: 0;
 }
 table {
   text-align: left;
