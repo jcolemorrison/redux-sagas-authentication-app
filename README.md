@@ -9,7 +9,7 @@ This repo is an example application that documents and walks through a complete 
 
 The full overview can be found here:
 
-[React and Redux Sagas Signup and Login Tutorial](http://start.jcolemorrison.com/react-and-redux-sagas-authentication-app-tutorial/)
+[React and Redux Sagas Authentication App Tutorial](http://start.jcolemorrison.com/react-and-redux-sagas-authentication-app-tutorial/)
 
 The api being used with it can be found here:
 
