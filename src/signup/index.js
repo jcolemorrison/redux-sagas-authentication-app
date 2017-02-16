@@ -77,14 +77,14 @@ class Signup extends Component {
             */
           }
           {!requesting && !!errors.length && (
-            <Errors message="Faillure to signup due to:" errors={errors} />
+            <Errors message="Failure to signup due to:" errors={errors} />
           )}
           {!requesting && !!messages.length && (
             <Messages messages={messages} />
           )}
           {!requesting && successful && (
             <div>
-              Signup Succesful! <Link to="/login">Click here to Login »</Link>
+              Signup Successful! <Link to="/login">Click here to Login »</Link>
             </div>
           )}
           {/* Redux Router's <Link> component for quick navigation of routes */}
