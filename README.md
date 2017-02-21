@@ -23,7 +23,7 @@ The guide associated with creating that can be found here:
 
 ---
 
-Part 2 and 3 are still pending for this guide and repo.
+Part 3 is still pending for this guide and repo.
 
 ---
 
