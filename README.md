@@ -1,4 +1,4 @@
-## React and Redux Sagas Signup and Login App
+## React and Redux Sagas Authentication App
 
 This repo is an example application that documents and walks through a complete Signup, Login and Protected resource flow using the following:
 
@@ -7,9 +7,11 @@ This repo is an example application that documents and walks through a complete 
 - Redux Form
 - React Router
 
-The full overview can be found here:
+The full overviews can be found here:
 
-[React and Redux Sagas Signup and Login Tutorial](http://start.jcolemorrison.com/react-redux-sagas-signup-and-login-tutorial)
+[React and Redux Sagas Authentication App Tutorial](http://start.jcolemorrison.com/react-redux-sagas-authentication-tutorial)
+
+[React and Redux Sagas Authentication App Tutorial](http://start.jcolemorrison.com/react-redux-sagas-authentication-tutorial-part-2)
 
 The api being used with it can be found here:
 
