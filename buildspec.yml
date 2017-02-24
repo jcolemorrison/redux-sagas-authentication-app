@@ -8,9 +8,14 @@ environment_variables:
 phases:
   install:
     commands:
+      - echo installing curl
+      - apt-get update
+      - apt-get install -y curl
       - echo Installing Yarn ....
+      - /bin/bash --version
+      - bash --version
       - echo $PATH
-      - curl -o- -L https://yarnpkg.com/install.sh
+      - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version $YARN_VERSION
   pre_build:
     commands:
       - echo Installing dependencies
