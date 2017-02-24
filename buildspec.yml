@@ -9,9 +9,6 @@ phases:
   install:
     commands:
       - echo Installing Yarn ....
-      - /bin/bash --version
-      - /bin/sh --version
-      - bash --version
       - echo $PATH
       - curl -o- -L https://yarnpkg.com/install.sh
   pre_build:
