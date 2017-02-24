@@ -8,7 +8,6 @@ phases:
       - apt-get install -y apt-transport-https
       - curl -sL https://deb.nodesource.com/setup | sudo bash -
       - apt-get install -y nodejs
-      - ln -s /usr/bin/nodejs /usr/bin/node
       - curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash -
       - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
       - echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
