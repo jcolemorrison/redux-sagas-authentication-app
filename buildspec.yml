@@ -1,19 +1,13 @@
 version: 0.1
 
-environment_variables:
-  plaintext:
-    YARN_VERSION: 0.20.3
-    PATH: /usr/local/bin/.yarn/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
 phases:
   install:
     commands:
       - echo Installing Yarn ....
-      - /bin/bash --version
-      - bash --version
-      - echo ${PATH}
-      - echo ${HOME}
-      - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version $YARN_VERSION
+      - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+      - echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
+      - apt-get update
+      - apt-get install -y yarn
   pre_build:
     commands:
       - echo Installing dependencies
