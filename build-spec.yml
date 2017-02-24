@@ -1,0 +1,25 @@
+version: 0.1
+
+environment_variables:
+  plaintext:
+    YARN_VERSION: 0.20.3
+    PATH: "${PATH}:${HOME}/.yarn/bin"
+
+phases:
+  install:
+    commands:
+      - echo Installing Yarn ....
+      - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version $YARN_VERSION
+  pre_build:
+    commands:
+      - echo Installing dependencies
+      - yarn
+      - yarn test
+  build:
+    commands:
+      - echo Building project...
+      - yarn build
+  post_build:
+    commands:
+      - echo completed build!
+      - docker build -t sample/image .
