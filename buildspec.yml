@@ -1,10 +1,5 @@
 version: 0.1
 
-environment_variables:
-  plaintext:
-    YARN_VERSION: 0.20.3
-    PATH: "${PATH}:${HOME}/.yarn/bin"
-
 phases:
   install:
     commands:
