@@ -3,7 +3,7 @@ version: 0.1
 environment_variables:
   plaintext:
     YARN_VERSION: 0.20.3
-    PATH: ${PATH}
+    PATH: $PATH
 
 phases:
   install:
