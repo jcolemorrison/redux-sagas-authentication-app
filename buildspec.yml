@@ -1,11 +1,12 @@
 version: 0.1
 
+environment_variables:
+  plaintext:
+    YARN_VERSION: 0.20.3
+
 phases:
   install:
     commands:
-      - echo installing curl
-      - apt-get update
-      - apt-get install -y curl
       - echo Installing Yarn ....
       - /bin/bash --version
       - bash --version
