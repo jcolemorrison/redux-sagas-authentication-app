@@ -5,7 +5,10 @@ phases:
     commands:
       - echo Installing Yarn ....
       - apt-get update
-      - apt-get install python-software-properties apt-transport-https
+      - apt-get install apt-transport-https
+      - curl -sL https://deb.nodesource.com/setup | sudo bash -
+      - apt-get install nodejs
+      - ln -s /usr/bin/nodejs /usr/bin/node
       - curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash -
       - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
       - echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
