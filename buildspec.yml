@@ -1,18 +1,22 @@
 version: 0.1
 
+environment_variables:
+  DATE_TAG: `date +%s%3N`
+
 phases:
   install:
     commands:
       - echo Installing Yarn ....
       - apt-get update
       - apt-get install -y apt-transport-https
-      - curl -sL https://deb.nodesource.com/setup | sudo bash -
+      - curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
       - apt-get install -y nodejs
-      - curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash -
       - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
       - echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
       - apt-get update
       - apt-get install -y yarn
+      - echo Logging into ECR
+      - $(aws ecr get-login --region $AWS_DEFAULT_REGION)
   pre_build:
     commands:
       - echo Installing dependencies
@@ -22,7 +26,11 @@ phases:
     commands:
       - echo Building project...
       - yarn build
+      - echo Building the Image and Configure CFN file...
+      - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO:$DATE_TAG .
+      - node ./cfn/create-configure.js
   post_build:
     commands:
-      - echo completed build!
-      - docker build -t sample/image .
+      - echo Pushing new ECR image...
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO:$DATE_TAG
+      - echo Build complete!

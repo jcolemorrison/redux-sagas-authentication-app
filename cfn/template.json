@@ -1,0 +1,763 @@
+{
+  "AWSTemplateFormatVersion":"2010-09-09",
+  "Description": "Cross Region Scalable, ECS Cloud Formation Template",
+  "Metadata": {
+    "Author": {"Name": "J Cole Morrison"},
+    "Key": {"Map": "Value"}
+  },
+  "Parameters": {
+    "KeyPairName":{
+      "Type":"AWS::EC2::KeyPair::KeyName",
+      "Description":"Name of an existing EC2 KeyPair to enable SSH access to the ECS instances."
+    },
+    "VpcId":{
+      "Type":"AWS::EC2::VPC::Id",
+      "Description":"Select a VPC that allows instances to access the Internet."
+    },
+    "WebTaskImage": {
+      "Type": "String",
+      "Description": "Url of the Docker Image to deploy"
+    },
+    "SubnetID":{
+      "Type":"List<AWS::EC2::Subnet::Id>",
+      "Description":"Select at two subnets in your selected VPC."
+    },
+    "BastionSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup::Id",
+      "Description": "Security Group ID of our Bastion Server"
+    },
+    "DesiredCapacity":{
+      "Type":"Number",
+      "Default":"1",
+      "Description":"Number of instances to launch in your ECS cluster."
+    },
+    "MaxSize":{
+      "Type":"Number",
+      "Default":"1",
+      "Description":"Maximum number of instances that can be launched in your ECS cluster."
+    },
+    "AutoScale": {
+      "Type": "String",
+      "Default": "false",
+      "Description": "Should we automatically scale with CloudWatch Alarms?",
+      "AllowedValues": ["true", "false"]
+    },
+    "InstanceType":{
+      "Description":"EC2 instance type",
+      "Type":"String",
+      "Default":"t2.micro",
+      "AllowedValues":[
+        "t2.micro",
+        "t2.small",
+        "t2.medium",
+        "t2.large",
+        "m3.medium",
+        "m3.large",
+        "m3.xlarge",
+        "m3.2xlarge",
+        "m4.large",
+        "m4.xlarge",
+        "m4.2xlarge",
+        "m4.4xlarge",
+        "m4.10xlarge",
+        "c4.large",
+        "c4.xlarge",
+        "c4.2xlarge",
+        "c4.4xlarge",
+        "c4.8xlarge",
+        "c3.large",
+        "c3.xlarge",
+        "c3.2xlarge",
+        "c3.4xlarge",
+        "c3.8xlarge",
+        "r3.large",
+        "r3.xlarge",
+        "r3.2xlarge",
+        "r3.4xlarge",
+        "r3.8xlarge",
+        "i2.xlarge",
+        "i2.2xlarge",
+        "i2.4xlarge",
+        "i2.8xlarge"
+      ],
+      "ConstraintDescription":"Please choose a valid instance type."
+    }
+  },
+  "Mappings":{
+    "AWSRegionECSAMI":{
+      "us-east-1": { "ID" : "ami-b2df2ca4" },
+      "us-east-2": { "ID" : "ami-832b0ee6" },
+      "us-west-1": { "ID" : "ami-dd104dbd" },
+      "us-west-2": { "ID" : "ami-022b9262" },
+      "eu-west-1": { "ID" : "ami-a7f2acc1" },
+      "eu-west-2": { "ID" : "ami-3fb6bc5b" },
+      "eu-central-1": { "ID" : "ami-ec2be583" },
+      "ap-northeast-1": { "ID" : "ami-c393d6a4" },
+      "ap-southeast-1": { "ID" : "ami-a88530cb" },
+      "ap-southeast-2": { "ID" : "ami-8af8ffe9" },
+      "ca-central-1": { "ID" : "ami-ead5688e" }
+    }
+  },
+  "Conditions": {
+    "CreateAutoScalingResources": {"Fn::Equals": [{ "Ref": "AutoScale" }, "true"]}
+  },
+  "Resources": {
+    "WebCluster": {
+      "Type": "AWS::ECS::Cluster"
+    },
+    "WebALBSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "SecurityGroup for our Web Application Load Balancer",
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "Tags": [{
+          "Key": "Name",
+          "Value": "Web ALB Security Group"
+        }],
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol":"tcp",
+            "FromPort":"80",
+            "ToPort":"80",
+            "CidrIp":"0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "WebInstanceSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "SecurityGroup for our Web Instances",
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "Tags": [{
+          "Key": "Name",
+          "Value": "Web Instance Security Group"
+        }],
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol":"tcp",
+            "FromPort":"22",
+            "ToPort":"22",
+            "SourceSecurityGroupId": { "Ref": "BastionSecurityGroup" }
+          },
+          {
+            "IpProtocol":"tcp",
+            "FromPort":"31000",
+            "ToPort":"61000",
+            "SourceSecurityGroupId": { "Ref": "WebALBSecurityGroup" }
+          }
+        ]
+      }
+    },
+    "WebInstanceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "Policies": [
+          {
+            "PolicyName": "WebEcsLogs",
+            "PolicyDocument": {
+              "Statement": {
+                "Effect": "Allow",
+                "Action": [
+                  "logs:CreateLogGroup",
+                  "logs:DescribeLogStreams"
+                ],
+                "Resource": [
+                  "arn:aws:logs:*:*:*"
+                ]
+              }
+            }
+          }
+        ],
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role",
+          "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
+        ],
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ec2.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "WebInstanceProfile": {
+      "Type":"AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Roles": [
+          {
+            "Ref": "WebInstanceRole"
+          }
+        ]
+      }
+    },
+    "WebServiceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ecs.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole"
+        ]
+      }
+    },
+    "WebAutoscalingRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "application-autoscaling.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole"
+        ]
+      }
+    },
+    "WebALB": {
+      "Type":"AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties":{
+        "Name":"vpcity-web-alb",
+        "Scheme":"internet-facing",
+        "LoadBalancerAttributes":[
+          {
+            "Key":"idle_timeout.timeout_seconds",
+            "Value":"60"
+          }
+        ],
+        "Subnets":{
+          "Ref":"SubnetID"
+        },
+        "SecurityGroups":[
+          {
+            "Ref":"WebALBSecurityGroup"
+          }
+        ]
+      }
+    },
+    "WebALBListener":{
+      "Type":"AWS::ElasticLoadBalancingV2::Listener",
+      "Properties":{
+        "LoadBalancerArn":{
+          "Ref":"WebALB"
+        },
+        "Port":"80",
+        "Protocol":"HTTP",
+        "DefaultActions":[
+          {
+            "Type":"forward",
+            "TargetGroupArn":{
+              "Ref":"WebALBTargetGroup"
+            }
+          }
+        ]
+      }
+    },
+    "WebALBListenerRule": {
+      "Type":"AWS::ElasticLoadBalancingV2::ListenerRule",
+      "DependsOn": "WebALBListener",
+      "Properties": {
+        "ListenerArn": {
+          "Ref": "WebALBListener"
+        },
+        "Actions": [
+          {
+            "Type":"forward",
+            "TargetGroupArn":{
+              "Ref":"WebALBTargetGroup"
+            }
+          }
+        ],
+        "Conditions": [
+          {
+            "Field": "path-pattern",
+            "Values": [
+              "/"
+            ]
+          }
+        ],
+        "Priority": 1
+      }
+    },
+    "WebALBTargetGroup": {
+      "Type":"AWS::ElasticLoadBalancingV2::TargetGroup",
+      "DependsOn": "WebALB",
+      "Properties": {
+        "Name": "WebALBTargetGroup",
+        "HealthCheckIntervalSeconds":10,
+        "HealthCheckPath":"/",
+        "HealthCheckProtocol":"HTTP",
+        "HealthCheckTimeoutSeconds":5,
+        "HealthyThresholdCount":2,
+        "Port":80,
+        "Protocol":"HTTP",
+        "UnhealthyThresholdCount":2,
+        "VpcId":{
+          "Ref":"VpcId"
+        }
+      }
+    },
+    "WebAutoscalingGroup": {
+      "Type":"AWS::AutoScaling::AutoScalingGroup",
+      "Properties":{
+        "VPCZoneIdentifier":{
+          "Ref":"SubnetID"
+        },
+        "LaunchConfigurationName":{
+          "Ref":"WebLaunchConfig"
+        },
+        "MinSize":"1",
+        "MaxSize":{
+          "Ref":"MaxSize"
+        },
+        "DesiredCapacity":{
+          "Ref":"DesiredCapacity"
+        }
+      },
+      "CreationPolicy":{
+        "ResourceSignal":{
+          "Timeout":"PT15M"
+        }
+      },
+      "UpdatePolicy":{
+        "AutoScalingReplacingUpdate":{
+          "WillReplace":"true"
+        }
+      }
+    },
+    "WebLaunchConfig": {
+      "Type":"AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "ImageId": {
+          "Fn::FindInMap": [
+            "AWSRegionECSAMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            "ID"
+          ]
+        },
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "IamInstanceProfile": {
+          "Ref": "WebInstanceProfile"
+        },
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "Content-Type: multipart/mixed; boundary=\"==BOUNDARY==\"\n",
+                "MIME-Version: 1.0\n",
+                "\n",
+                "--==BOUNDARY==\n",
+                "MIME-Version: 1.0\n",
+                "Content-Type: text/x-shellscript; charset=\"us-ascii\"\n",
+                "#!/usr/bin/env bash\n",
+                "\n",
+                "# This Script can be found at https://github.com/jcolemorrison/ecs-admin-helpers\n",
+                "echo ECS_CLUSTER=",
+                {
+                  "Ref":"WebCluster"
+                },
+                " >> /etc/ecs/ecs.config\n",
+                "\n",
+                "yum install -y awslogs jq\n",
+                "mv /etc/awslogs/awslogs.conf /etc/awslogs/awslogs.conf.bak\n",
+                "cat > /etc/awslogs/awslogs.conf <<- EOF\n",
+                "[general]\n",
+                "state_file = /var/lib/awslogs/agent-state\n",
+                "\n",
+                "[/var/log/dmesg]\n",
+                "file = /var/log/dmesg\n",
+                "log_group_name = /var/log/dmesg\n",
+                "log_stream_name = {cluster}/{container_instance_id}\n",
+                "\n",
+                "[/var/log/messages]\n",
+                "file = /var/log/messages\n",
+                "log_group_name = /var/log/messages\n",
+                "log_stream_name = {cluster}/{container_instance_id}\n",
+                "datetime_format = %b %d %H:%M:%S\n",
+                "\n",
+                "[/var/log/docker]\n",
+                "file = /var/log/docker\n",
+                "log_group_name = /var/log/docker\n",
+                "log_stream_name = {cluster}/{container_instance_id}\n",
+                "datetime_format = %Y-%m-%dT%H:%M:%S.%f\n",
+                "\n",
+                "[/var/log/ecs/ecs-init.log]\n",
+                "file = /var/log/ecs/ecs-init.log.*\n",
+                "log_group_name = /var/log/ecs/ecs-init.log\n",
+                "log_stream_name = {cluster}/{container_instance_id}\n",
+                "datetime_format = %Y-%m-%dT%H:%M:%SZ\n",
+                "\n",
+                "[/var/log/ecs/ecs-agent.log]\n",
+                "file = /var/log/ecs/ecs-agent.log.*\n",
+                "log_group_name = /var/log/ecs/ecs-agent.log\n",
+                "log_stream_name = {cluster}/{container_instance_id}\n",
+                "datetime_format = %Y-%m-%dT%H:%M:%SZ\n",
+                "\n",
+                "[/var/log/ecs/audit.log]\n",
+                "file = /var/log/ecs/audit.log.*\n",
+                "log_group_name = /var/log/ecs/audit.log\n",
+                "log_stream_name = {cluster}/{container_instance_id}\n",
+                "datetime_format = %Y-%m-%dT%H:%M:%SZ\n",
+                "\n",
+                "EOF\n",
+                "\n",
+                "region=$(curl 169.254.169.254/latest/meta-data/placement/availability-zone | sed s'/.$//')\n",
+                "sed -i -e \"s/region = us-east-1/region = $region/g\" /etc/awslogs/awscli.conf\n",
+                "\n",
+                "yum install -y https://amazon-ssm-$region.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm\n",
+                "\n",
+                "yum install -y aws-cfn-bootstrap\n",
+                "/opt/aws/bin/cfn-signal -e $? ",
+                "         --stack ",
+                {
+                  "Ref":"AWS::StackName"
+                },
+                "         --resource WebAutoscalingGroup ",
+                "         --region ",
+                {
+                  "Ref":"AWS::Region"
+                },
+                "\n",
+                "--==BOUNDARY==\n",
+                "MIME-Version: 1.0\n",
+                "Content-Type: text/upstart-job; charset=\"us-ascii\"\n",
+                "\n",
+                "#upstart-job\n",
+                "description \"Configure and start CloudWatch Logs agent on Amazon ECS container instance\"\n",
+                "author \"Amazon Web Services\"\n",
+                "start on started ecs\n",
+                "\n",
+                "script\n",
+                "  exec 2>>/var/log/ecs/cloudwatch-logs-start.log\n",
+                "  set -x\n",
+                "  \n",
+                "  until curl -s http://localhost:51678/v1/metadata\n",
+                "  do\n",
+                "    sleep 1 \n",
+                "  done\n",
+                "  \n",
+                "  cluster=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .Cluster')\n",
+                "  container_instance_id=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .ContainerInstanceArn' | awk -F/ '{print $2}' )\n",
+                "  sed -i -e \"s/{cluster}/$cluster/g\" /etc/awslogs/awslogs.conf\n",
+                "  sed -i -e \"s/{container_instance_id}/$container_instance_id/g\" /etc/awslogs/awslogs.conf\n",
+                "  \n",
+                "  service awslogs start\n",
+                "  chkconfig awslogs on\n",
+                "end script\n",
+                "--==BOUNDARY==--\n"
+              ]
+            ]
+          }
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "WebInstanceSecurityGroup"
+          }
+        ],
+        "KeyName": {
+          "Ref": "KeyPairName"
+        }
+      }
+    },
+    "WebTaskLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Join": [
+            "-",
+            [
+              {
+                "Ref": "AWS::StackName"
+              },
+              "WebTaskLogs"
+            ]
+          ]
+        },
+        "RetentionInDays": 14
+      }
+    },
+    "WebTaskDefinition": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "Family": {
+          "Fn::Join": [
+            "",
+            [
+              {
+                "Ref": "AWS::StackName"
+              },
+              "-web-task"
+            ]
+          ]
+        },
+        "ContainerDefinitions": [
+          {
+            "Name": "web-task",
+            "Image": {
+              "Ref": "WebTaskImage"
+            },
+            "Memory": "300",
+            "Cpu": "256",
+            "Essential": true,
+            "PortMappings": [
+                {
+                    "ContainerPort": "80",
+                    "Protocol": "tcp"
+                }
+            ],
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group":{
+                  "Ref":"WebTaskLogs"
+                },
+                "awslogs-region":{
+                  "Ref":"AWS::Region"
+                },
+                "awslogs-stream-prefix":"webtask"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "WebService":{
+      "Type":"AWS::ECS::Service",
+      "DependsOn":"WebALBListener",
+      "Properties":{
+        "Cluster":{
+          "Ref":"WebCluster"
+        },
+        "DesiredCount":"1",
+        "LoadBalancers":[
+          {
+            "ContainerName":"web-task",
+            "ContainerPort":"80",
+            "TargetGroupArn":{
+              "Ref":"WebALBTargetGroup"
+            }
+          }
+        ],
+        "DeploymentConfiguration":{
+          "MaximumPercent":200,
+          "MinimumHealthyPercent":0
+        },
+        "Role":{
+          "Ref":"WebServiceRole"
+        },
+        "TaskDefinition":{
+          "Ref":"WebTaskDefinition"
+        }
+      }
+    },
+    "WebServiceScalingTarget": {
+      "Type":"AWS::ApplicationAutoScaling::ScalableTarget",
+      "DependsOn":"WebService",
+      "Properties": {
+        "MaxCapacity":2,
+        "MinCapacity":1,
+        "ResourceId":{
+          "Fn::Join":[
+            "",
+            [
+              "service/",
+              {
+                "Ref":"WebCluster"
+              },
+              "/",
+              {
+                "Fn::GetAtt":[
+                  "WebService",
+                  "Name"
+                ]
+              }
+            ]
+          ]
+        },
+        "RoleARN": {
+          "Fn::GetAtt": [
+            "WebAutoscalingRole",
+            "Arn"
+          ]
+        },
+        "ScalableDimension": "ecs:service:DesiredCount",
+        "ServiceNamespace": "ecs"
+      }
+    },
+    "WebServiceIncreasePolicy": {
+      "Type":"AWS::ApplicationAutoScaling::ScalingPolicy",
+      "Properties": {
+        "PolicyName": "WebServiceIncreaseStepPolicy",
+        "PolicyType": "StepScaling",
+        "ScalingTargetId": {
+          "Ref": "WebServiceScalingTarget"
+        },
+        "StepScalingPolicyConfiguration": {
+          "AdjustmentType": "ChangeInCapacity",
+          "Cooldown": 60,
+          "MetricAggregationType": "Average",
+          "StepAdjustments": [
+            {
+              "MetricIntervalLowerBound": 0,
+              "MetricIntervalUpperBound": 10,
+              "ScalingAdjustment": 0
+            },
+            {
+              "MetricIntervalLowerBound": 10,
+              "MetricIntervalUpperBound": 20,
+              "ScalingAdjustment": 1
+            },
+            {
+              "MetricIntervalLowerBound": 20,
+              "ScalingAdjustment": 2
+            }
+          ]
+        }
+      }
+    },
+    "WebServiceCpuAbove50": {
+      "Type":"AWS::CloudWatch::Alarm",
+      "Properties": {
+        "EvaluationPeriods": 50,
+        "Statistic": "Average",
+        "Threshold": 40,
+        "AlarmDescription": "As our CPU utilization fluctuates around 50",
+        "Period": 600,
+        "AlarmActions": [
+          {
+            "Ref": "WebServiceIncreasePolicy"
+          }
+        ],
+        "Namespace": "AWS/ECS",
+        "Dimensions": [
+          {
+            "Name": "ClusterName",
+            "Value": {
+              "Ref": "WebCluster"
+            }
+          },
+          {
+            "Name": "ServiceName",
+            "Value": {
+              "Fn::GetAtt":[
+                "WebService",
+                "Name"
+              ]
+            }
+          }
+        ],
+        "ComparisonOperator":"GreaterThanThreshold",
+        "MetricName": "CPUUtilization"
+      }
+    },
+    "WebInstancesCpuAbove50": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "EvaluationPeriods": "1",
+        "Statistic": "Average",
+        "Threshold": "50",
+        "Period": "60",
+        "AlarmDescription": "If our cluster CPU reservation goes above 50",
+        "AlarmActions": [ { "Ref": "WebInstancesScaleUpPolicy" } ],
+        "Namespace": "AWS/ECS",
+        "Dimensions": [
+          {
+            "Name": "ClusterName",
+            "Value": {
+              "Ref": "WebCluster"
+            }
+          }
+        ],
+        "ComparisonOperator": "GreaterThanThreshold",
+        "MetricName": "CPUUtilization"
+      }
+    },
+    "WebInstancesScaleUpPolicy": {
+      "Type" : "AWS::AutoScaling::ScalingPolicy",
+      "Properties" : {
+         "AdjustmentType" : "ChangeInCapacity",
+         "AutoScalingGroupName" : { "Ref" : "WebAutoscalingGroup" },
+         "Cooldown" : "60",
+         "ScalingAdjustment" : "1"
+      }
+    },
+    "WebInstancesCpuBelow50": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "EvaluationPeriods": "1",
+        "Statistic": "Average",
+        "Threshold": "50",
+        "Period": "60",
+        "AlarmDescription": "If our cluster CPU reservation goes below 50",
+        "AlarmActions": [ { "Ref": "WebInstancesScaleDownPolicy" } ],
+        "Namespace": "AWS/ECS",
+        "Dimensions": [
+          {
+            "Name": "ClusterName",
+            "Value": {
+              "Ref": "WebCluster"
+            }
+          }
+        ],
+        "ComparisonOperator": "LessThanThreshold",
+        "MetricName": "CPUUtilization"
+      }
+    },
+    "WebInstancesScaleDownPolicy": {
+      "Type" : "AWS::AutoScaling::ScalingPolicy",
+      "Properties" : {
+         "AdjustmentType" : "ChangeInCapacity",
+         "AutoScalingGroupName" : { "Ref" : "WebAutoscalingGroup" },
+         "Cooldown" : "60",
+         "ScalingAdjustment" : "-1"
+      }
+    }
+  },
+  "Outputs": {
+    "EcsCluster": {
+      "Description": "The name of our newly created cluster",
+      "Value": {"Ref": "WebCluster"}
+    }
+  }
+}
