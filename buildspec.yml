@@ -24,6 +24,7 @@ phases:
       - echo Building project...
       - yarn build
       - echo Building the Image and Configure CFN file...
+      - chmod +x ./cfn/build.sh
       - ./cfn/build.sh
   post_build:
     commands:
