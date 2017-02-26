@@ -1,7 +1,8 @@
 version: 0.1
 
 environment_variables:
-  DATE_TAG: `date +%s%3N`
+  plaintext:
+    DATE_TAG: `date +%s%3N`
 
 phases:
   install:
