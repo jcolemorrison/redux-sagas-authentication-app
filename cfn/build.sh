@@ -9,3 +9,6 @@ echo "Creating configuration..."
 node ./cfn/create-configure.js
 echo "Pushing image"
 docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO:$DATE_TAG
+echo "Updating CFN"
+aws cloudformation update-stack --stack-name autoscalae --use-previous-template \
+  --parameters ParameterKey=WebTaskImage,ParameterValue=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO:$DATE_TAG
