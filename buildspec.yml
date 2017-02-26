@@ -1,9 +1,5 @@
 version: 0.1
 
-environment_variables:
-  plaintext:
-    DATE_TAG: `date +%s%3N`
-
 phases:
   install:
     commands:
@@ -28,10 +24,7 @@ phases:
       - echo Building project...
       - yarn build
       - echo Building the Image and Configure CFN file...
-      - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO:$DATE_TAG .
-      - node ./cfn/create-configure.js
+      - ./cfn/build.sh
   post_build:
     commands:
-      - echo Pushing new ECR image...
-      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO:$DATE_TAG
       - echo Build complete!
