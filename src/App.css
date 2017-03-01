@@ -70,6 +70,10 @@ button {
   margin-top: 1rem;
 }
 
+button[disabled] {
+  opacity: 0.6;
+}
+
 label {
   display: block;
   margin-bottom: .25rem;
