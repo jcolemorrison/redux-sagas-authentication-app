@@ -8,7 +8,7 @@ docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE
 echo "Pushing image"
 docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO:$DATE_TAG
 echo "Updating CFN"
-aws cloudformation update-stack --stack-name autoscalae --use-previous-template --capabilities CAPABILITY_IAM \
+aws cloudformation update-stack --stack-name vpcity-web --use-previous-template --capabilities CAPABILITY_IAM \
   --parameters ParameterKey=WebTaskImage,ParameterValue=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO:$DATE_TAG \
   ParameterKey=AutoScale,UsePreviousValue=true \
   ParameterKey=BastionSecurityGroup,UsePreviousValue=true \
