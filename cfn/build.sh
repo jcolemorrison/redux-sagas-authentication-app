@@ -15,5 +15,5 @@ aws cloudformation update-stack --stack-name vpcity-web --use-previous-template 
   ParameterKey=InstanceType,UsePreviousValue=true \
   ParameterKey=KeyPairName,UsePreviousValue=true \
   ParameterKey=MaxSize,UsePreviousValue=true \
-  ParameterKey=SubnetID,UsePreviousValue=true \
+  ParameterKey=SubnetIDs,UsePreviousValue=true \
   ParameterKey=VpcId,UsePreviousValue=true
