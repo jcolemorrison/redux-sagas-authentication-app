@@ -16,7 +16,7 @@ class Widgets extends Component {
     handleSubmit: PropTypes.func.isRequired,
     invalid: PropTypes.bool.isRequired,
     client: PropTypes.shape({
-      id: PropTypes.number.isRequired,
+      id: PropTypes.string.isRequired,
       token: PropTypes.object.isRequired,
     }),
     widgets: PropTypes.shape({
