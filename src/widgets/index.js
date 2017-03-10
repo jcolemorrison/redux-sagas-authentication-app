@@ -8,10 +8,7 @@ import Errors from '../notifications/Errors'
 // include our widgetRequest action
 import { widgetCreate, widgetRequest } from './actions'
 
-// Our validation function for `name` field.
-const nameRequired = value => (value ? undefined : 'Name Required')
-
-class Widgets extends Component {
+export class Widgets extends Component {
   static propTypes = {
     handleSubmit: PropTypes.func.isRequired,
     invalid: PropTypes.bool.isRequired,
@@ -52,6 +49,9 @@ class Widgets extends Component {
     // reset the form upon submit.
     reset()
   }
+
+  // Our validation function for `name` field.
+  nameRequired = value => (value ? undefined : 'Name Required')
 
   renderNameInput = ({ input, type, meta: { touched, error } }) => (
     <div>
@@ -109,7 +109,7 @@ class Widgets extends Component {
               id="name"
               className="name"
               component={this.renderNameInput}
-              validate={nameRequired}
+              validate={this.nameRequired}
             />
             <label htmlFor="description">Description</label>
             <Field
@@ -181,7 +181,7 @@ class Widgets extends Component {
 }
 
 // Pull in both the Client and the Widgets state
-const mapStateToProps = state => ({
+export const mapStateToProps = state => ({
   client: state.client,
   widgets: state.widgets,
 })
